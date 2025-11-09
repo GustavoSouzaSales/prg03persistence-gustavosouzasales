@@ -1,6 +1,10 @@
 
 package br.com.ifba.curso.view;
 
+import jakarta.persistence.*;
+import br.com.ifba.curso.entity.Curso;
+import java.util.List;
+
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.RowFilter;
@@ -58,8 +62,18 @@ public class CursoListar extends javax.swing.JFrame {
     @Override
     public void changedUpdate(DocumentEvent e) { filtrar(); }
 });
-
+        // carrega cursos do banco ao abrir.
+        carregarCursos();
     }
+    
+    // cria EntityManager (conexão com o banco).
+    private EntityManager getEntityManager() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("cursoPU");
+        return emf.createEntityManager();
+    }
+    
+    
+
     
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -132,38 +146,59 @@ public class CursoListar extends javax.swing.JFrame {
     }//GEN-LAST:event_txtProcurarActionPerformed
 
     private void btnExcluirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcluirActionPerformed
-        // Pega a linha selecionada na tabela
+    // Pega a linha selecionada na tabela
     int linhaSelecionada = jTable1.getSelectedRow();
 
     if (linhaSelecionada == -1) {
-        // Nenhuma linha selecionada
-        javax.swing.JOptionPane.showMessageDialog(this, 
-            "Selecione um curso para excluir!", 
-            "Aviso", 
-            javax.swing.JOptionPane.WARNING_MESSAGE);
+        javax.swing.JOptionPane.showMessageDialog(this,
+                "Selecione um curso para excluir!",
+                "Aviso",
+                javax.swing.JOptionPane.WARNING_MESSAGE);
         return;
     }
 
-    // Pega o nome do curso da linha selecionada (coluna 0)
+    // pega o nome do curso da linha selecionada.
     String nomeCurso = jTable1.getValueAt(linhaSelecionada, 0).toString();
 
-    // Mostra a mensagem de confirmação
+    // mostra a mensagem de confirmação.
     int confirmacao = javax.swing.JOptionPane.showConfirmDialog(
-        this,
-        "Tem certeza que deseja excluir: " + nomeCurso + "?",
-        "Confirmação",
-        javax.swing.JOptionPane.YES_NO_OPTION
+            this,
+            "Tem certeza que deseja excluir: " + nomeCurso + "?",
+            "Confirmação",
+            javax.swing.JOptionPane.YES_NO_OPTION
     );
 
-    // Se o usuário clicou em "Sim"
     if (confirmacao == javax.swing.JOptionPane.YES_OPTION) {
-        // Aqui você remove da tabela (e futuramente do arquivo)
-        javax.swing.table.DefaultTableModel model = 
-            (javax.swing.table.DefaultTableModel) jTable1.getModel();
-        model.removeRow(linhaSelecionada);
+        EntityManager em = getEntityManager();
+        em.getTransaction().begin();
 
-        javax.swing.JOptionPane.showMessageDialog(this, 
-            "Curso \"" + nomeCurso + "\" excluído com sucesso!");
+        try {
+            // busca o curso no banco pelo nome.
+            Curso curso = em.createQuery(
+                    "SELECT c FROM Curso c WHERE c.nome = :nome", Curso.class)
+                    .setParameter("nome", nomeCurso)
+                    .getSingleResult();
+
+            // remove o curso encontrado.
+            em.remove(em.merge(curso));
+            em.getTransaction().commit();
+
+            // remove da tabela visual também.
+            javax.swing.table.DefaultTableModel model =
+                    (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            model.removeRow(linhaSelecionada);
+
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Curso \"" + nomeCurso + "\" excluído com sucesso!");
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Erro ao excluir: " + e.getMessage(),
+                    "Erro",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+            em.getTransaction().rollback();
+        } finally {
+            em.close();
+        }
     }
     }//GEN-LAST:event_btnExcluirActionPerformed
 
@@ -178,11 +213,11 @@ public class CursoListar extends javax.swing.JFrame {
         return;
     }
 
-    // Pega os dados da linha
+    // pega os dados da linha.
     String nome = jTable1.getValueAt(linhaSelecionada, 0).toString();
     String codigo = jTable1.getValueAt(linhaSelecionada, 1).toString();
 
-    // Cria a tela de edição e passa os dados e a referência desta tela
+    // cria a tela de edição e passa os dados e a referência desta tela.
     javax.swing.JFrame frame = new javax.swing.JFrame("Editar Curso");
     frame.setContentPane(new CursoEditar(this, linhaSelecionada, nome, codigo));
     frame.pack();
@@ -191,21 +226,43 @@ public class CursoListar extends javax.swing.JFrame {
     }//GEN-LAST:event_btnEditarActionPerformed
 
     private void btnAdicionarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAdicionarActionPerformed
-        // cria uma nova janela (JFrame)
+        // cria uma nova janela (JFrame).
     javax.swing.JFrame frame = new javax.swing.JFrame("Adicionar Curso");
 
-    // adiciona o painel CursoAdicionar dentro dessa janela
+    // adiciona o painel CursoAdicionar dentro dessa janela.
     frame.setContentPane(new CursoAdicionar(this));
     
-    // ajusta o tamanho conforme o conteúdo
+    // ajusta o tamanho conforme o conteúdo.
     frame.pack();
     
-    // centraliza a janela na tela
+    // centraliza a janela na tela.
     frame.setLocationRelativeTo(null);
     
-    // mostra a janela
+    // mostra a janela.
     frame.setVisible(true);
     }//GEN-LAST:event_btnAdicionarActionPerformed
+    
+    // método público para recarregar a lista de cursos do banco.
+    public void carregarCursos() {
+    try {
+        jakarta.persistence.EntityManagerFactory emf = jakarta.persistence.Persistence.createEntityManagerFactory("cursoPU");
+        jakarta.persistence.EntityManager em = emf.createEntityManager();
+
+        java.util.List<br.com.ifba.curso.entity.Curso> cursos = em.createQuery("SELECT c FROM Curso c", br.com.ifba.curso.entity.Curso.class).getResultList();
+
+        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0); // limpa tabela
+
+        for (br.com.ifba.curso.entity.Curso c : cursos) {
+            model.addRow(new Object[]{c.getNome(), c.getCodigo()});
+        }
+
+        em.close();
+        emf.close();
+    } catch (Exception e) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Erro ao carregar cursos: " + e.getMessage());
+    }
+}
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

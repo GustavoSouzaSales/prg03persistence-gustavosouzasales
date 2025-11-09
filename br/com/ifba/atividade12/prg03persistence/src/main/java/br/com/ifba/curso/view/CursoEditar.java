@@ -1,14 +1,24 @@
 
 package br.com.ifba.curso.view;
 
+import br.com.ifba.curso.entity.Curso;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+
+
 public class CursoEditar extends javax.swing.JPanel {
 
     private CursoListar telaListar;
     private int linha; // índice da linha que será editada.
-
+    private String nomeOriginal;
+    private String codigoOriginal;
+    
     public CursoEditar(CursoListar telaListar, int linha, String nome, String codigo) {
     this.telaListar = telaListar;
     this.linha = linha;
+    this.nomeOriginal = nome;
+    this.codigoOriginal = codigo;
     initComponents();
 
     // preenche os campos com os dados atuais.
@@ -93,9 +103,8 @@ public class CursoEditar extends javax.swing.JPanel {
     // botão pra confirmar a edição do curso.
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
          String novoNome = txtCurso.getText();
-        String novoCodigo = txtCodigo.getText();
-    
-    // verifica se todos os campos foram preenchidos.
+    String novoCodigo = txtCodigo.getText();
+
     if (novoNome.isEmpty() || novoCodigo.isEmpty()) {
         javax.swing.JOptionPane.showMessageDialog(this,
             "Preencha todos os campos!",
@@ -104,18 +113,46 @@ public class CursoEditar extends javax.swing.JPanel {
         return;
     }
 
-    // atualiza a linha da tabela.
-    javax.swing.table.DefaultTableModel model =
-        (javax.swing.table.DefaultTableModel) telaListar.jTable1.getModel();
+    EntityManagerFactory emf = Persistence.createEntityManagerFactory("cursoPU");
+    EntityManager em = emf.createEntityManager();
 
-    model.setValueAt(novoNome, linha, 0);
-    model.setValueAt(novoCodigo, linha, 1);
+    try {
+    em.getTransaction().begin();
+
+    String codigoCurso = codigoOriginal;
+
+    Curso curso = em.createQuery(
+        "SELECT c FROM Curso c WHERE c.codigo = :codigo", Curso.class)
+        .setParameter("codigo", codigoCurso)
+        .getSingleResult();
+
+    // atualiza os dados.
+    curso.setNome(novoNome);
+    curso.setCodigo(novoCodigo);
+
+    em.merge(curso);
+    em.getTransaction().commit();
 
     javax.swing.JOptionPane.showMessageDialog(this,
         "Curso atualizado com sucesso!");
 
+    // atualiza a tabela na tela principal.
+    telaListar.carregarCursos();
+
     // fecha a janela de edição.
     javax.swing.SwingUtilities.getWindowAncestor(this).dispose();
+
+} catch (Exception e) {
+    javax.swing.JOptionPane.showMessageDialog(this,
+        "Erro ao atualizar curso: " + e.getMessage(),
+        "Erro",
+        javax.swing.JOptionPane.ERROR_MESSAGE);
+    em.getTransaction().rollback();
+} finally {
+    em.close();
+    emf.close();
+}
+
     }//GEN-LAST:event_jButton1ActionPerformed
 
 

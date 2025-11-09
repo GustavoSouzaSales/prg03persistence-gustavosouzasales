@@ -1,6 +1,13 @@
 
 package br.com.ifba.curso.view;
 
+// imports necessários para salvar no banco.
+import br.com.ifba.curso.entity.Curso;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+import javax.swing.JOptionPane;
+
 public class CursoAdicionar extends javax.swing.JPanel {
 
     private CursoListar telaListar; // referência da tela principal.
@@ -91,29 +98,58 @@ public class CursoAdicionar extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        String nome = txtCurso.getText();
-    String codigo = txtCurso1.getText();
-    
-    // verifica se todos os campos foram preenchidos.
-    if (nome.isEmpty() || codigo.isEmpty()) {
-        javax.swing.JOptionPane.showMessageDialog(this, 
-            "Preencha todos os campos!", 
-            "Erro", 
-            javax.swing.JOptionPane.ERROR_MESSAGE);
-        return;
+       String nome = txtCurso.getText();
+String codigo = txtCurso1.getText();
+
+// verifica se os campos foram preenchidos.
+if (nome.isEmpty() || codigo.isEmpty()) {
+    JOptionPane.showMessageDialog(this, 
+        "Preencha todos os campos!", 
+        "Erro", 
+        JOptionPane.ERROR_MESSAGE);
+    return;
+}
+
+try {
+    // cria conexão com o banco.
+    EntityManagerFactory emf = Persistence.createEntityManagerFactory("cursoPU");
+    EntityManager em = emf.createEntityManager();
+
+    // cria um novo curso e define os valores.
+    Curso curso = new Curso();
+    curso.setNome(nome);
+    curso.setCodigo(codigo);
+
+    // persiste (salva) no banco.
+    em.getTransaction().begin();
+    em.persist(curso);
+    em.getTransaction().commit();
+
+    em.close();
+    emf.close();
+
+    // atualiza tabela na tela principal.
+    if (telaListar != null) {
+        telaListar.carregarCursos();
     }
 
-    // adiciona na tabela da tela principal.
-    javax.swing.table.DefaultTableModel model = 
-        (javax.swing.table.DefaultTableModel) telaListar.jTable1.getModel();
-    model.addRow(new Object[]{nome, codigo});
-
-    javax.swing.JOptionPane.showMessageDialog(this, 
-        "Curso \"" + nome + "\" adicionado com sucesso!");
+    JOptionPane.showMessageDialog(this, 
+        "Curso \"" + nome + "\" salvo com sucesso!");
 
     // fecha a janela atual.
     javax.swing.SwingUtilities.getWindowAncestor(this).dispose();
+
+} catch (Exception e) {
+    JOptionPane.showMessageDialog(this, 
+        "Erro ao salvar curso: " + e.getMessage(), 
+        "Erro", 
+        JOptionPane.ERROR_MESSAGE);
+}
+
     }//GEN-LAST:event_jButton1ActionPerformed
+
+
+
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

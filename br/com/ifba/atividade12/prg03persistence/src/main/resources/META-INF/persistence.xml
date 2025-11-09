@@ -5,18 +5,20 @@
                                  https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
              version="3.0">
 
-    <!-- Nome do persistence-unit (usado no código Java) -->
     <persistence-unit name="cursoPU" transaction-type="RESOURCE_LOCAL">
-
-        <!-- Aqui você lista suas entidades -->
+        
+        <!-- ENTIDADES -->
         <class>br.com.ifba.curso.entity.Curso</class>
+
+        <!-- Hibernate será usado como o provider JPA -->
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
 
         <properties>
             <!-- Configuração JDBC -->
             <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
             <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/curso_db?useSSL=false&amp;serverTimezone=UTC"/>
             <property name="jakarta.persistence.jdbc.user" value="root"/>
-            <property name="jakarta.persistence.jdbc.password" value=""/>
+            <property name="jakarta.persistence.jdbc.password" value="root"/>
 
             <!-- Configuração do Hibernate -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect"/>
